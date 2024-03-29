@@ -25,9 +25,22 @@ jobs:
           ]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Setup toolchain
-        run: cargo install cross
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Set up cargo cache
+        uses: actions/cache@v3
+        continue-on-error: false
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+      - name: Set up cross
+        run: cargo install --locked cross
       - name: Build
         run: cross build --release --all-features --target ${{matrix.target}}
       - name: Run tests
