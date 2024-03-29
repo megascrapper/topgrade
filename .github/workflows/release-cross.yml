@@ -5,19 +5,23 @@ on:
   #   workflows: ["Check SemVer compliance"]
   #   types:
   #     - completed
-  release:
-    types: [ created ]
+  # release:
+  #   types: [ created ]
+  push:
+    branches: [ "gh-actions/**" ]
 
 jobs:
   build:
     strategy:
       fail-fast: false
       matrix:
-        target: [ "aarch64-unknown-linux-gnu", "armv7-unknown-linux-gnueabihf", "x86_64-unknown-linux-musl", "aarch64-unknown-linux-musl", "x86_64-unknown-freebsd",  ]
+        # target: [ "aarch64-unknown-linux-gnu", "armv7-unknown-linux-gnueabihf", "x86_64-unknown-linux-musl", "aarch64-unknown-linux-musl", "x86_64-unknown-freebsd",  ]
+        target: [ "aarch64-unknown-linux-gnu" ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rs/toolchain@v1
+        name: Setup toolchain
         with:
           toolchain: stable
           profile: minimal
@@ -25,6 +29,14 @@ jobs:
           override: true
           target: ${{ matrix.target }}
           components: rustfmt, clippy
+      - uses: actions-rs/cargo@v1.0.1
+        name: Dump information about cargo
+        with:
+          use-cross: true
+          command: ""
+          args: --version --verbose
+      - name: Dump information about gcc
+        run: gcc -v
       - uses: actions-rs/cargo@v1.0.1
         name: Check format
         with:
@@ -55,16 +67,10 @@ jobs:
           command: build
           use-cross: true
           args: --release --all-features --target ${{matrix.target}}
-      - name: Rename Release
-        run: |
-          mkdir assets
-          FILENAME=topgrade-${{github.event.release.tag_name}}-${{matrix.target}}
-          mv target/${{matrix.target}}/release/topgrade assets
-          cd assets
-          tar --format=ustar -czf $FILENAME.tar.gz topgrade
-          rm topgrade
-          ls .
-      - name: Release
-        uses: softprops/action-gh-release@v1
+      - name: Save files
+        uses: actions/upload-artifact@v4
         with:
-          files: assets/*
+          name: topgrade-${{ matrix.target }}
+          path: |
+            target/**/release/topgrade
+            target/**/release/topgrade.exe
