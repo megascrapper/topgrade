@@ -15,58 +15,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # target: [ "aarch64-unknown-linux-gnu", "armv7-unknown-linux-gnueabihf", "x86_64-unknown-linux-musl", "aarch64-unknown-linux-musl", "x86_64-unknown-freebsd",  ]
-        target: [ "aarch64-unknown-linux-gnu" ]
+        target: [ "aarch64-unknown-linux-gnu", "armv7-unknown-linux-gnueabihf", "x86_64-unknown-linux-musl", "aarch64-unknown-linux-musl", "x86_64-unknown-freebsd",  ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rs/toolchain@v1
-        name: Setup toolchain
-        with:
-          toolchain: stable
-          profile: minimal
-          default: true
-          override: true
-          target: ${{ matrix.target }}
-          components: rustfmt, clippy
-      - uses: actions-rs/cargo@v1.0.1
-        name: Dump information about cargo
-        with:
-          use-cross: true
-          command: version
-          args: --verbose
-      - name: Dump information about gcc
-        run: gcc -v
-      - uses: actions-rs/cargo@v1.0.1
-        name: Check format
-        with:
-          use-cross: true
-          command: fmt
-          args: --all -- --check
-      - uses: actions-rs/cargo@v1.0.1
-        name: Run clippy
-        with:
-          command: clippy
-          use-cross: true
-          args: --all-targets --locked --target ${{matrix.target}} -- -D warnings
-      - uses: actions-rs/cargo@v1.0.1
-        name: Run clippy (All features)
-        with:
-          command: clippy
-          use-cross: true
-          args:  --locked --all-features --target ${{matrix.target}} -- -D warnings
-      - uses: actions-rs/cargo@v1.0.1
-        name: Run tests
-        with:
-          command: test
-          use-cross: true
-          args: --target ${{matrix.target}}
-      - uses: actions-rs/cargo@v1.0.1
-        name: Build
-        with:
-          command: build
-          use-cross: true
-          args: --release --all-features --target ${{matrix.target}}
+      - name: Setup toolchain
+        run: cargo install cross
+      - name: Build
+        run: cross build --release --all-features --target ${{matrix.target}}
+      - name: Run tests
+        run: cross test --release --all-features --target ${{matrix.target}}
       - name: Save files
         uses: actions/upload-artifact@v4
         with:
