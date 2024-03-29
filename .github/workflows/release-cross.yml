@@ -8,14 +8,21 @@ on:
   # release:
   #   types: [ created ]
   push:
-    branches: [ "gh-actions/**" ]
+    branches: ["gh-actions/**"]
 
 jobs:
   build:
     strategy:
       fail-fast: false
       matrix:
-        target: [ "aarch64-unknown-linux-gnu", "armv7-unknown-linux-gnueabihf", "x86_64-unknown-linux-musl", "aarch64-unknown-linux-musl", "x86_64-unknown-freebsd",  ]
+        target:
+          [
+            "aarch64-unknown-linux-gnu",
+            "armv7-unknown-linux-gnueabihf",
+            "x86_64-unknown-linux-musl",
+            "aarch64-unknown-linux-musl",
+            "x86_64-unknown-freebsd",
+          ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,6 +31,8 @@ jobs:
       - name: Build
         run: cross build --release --all-features --target ${{matrix.target}}
       - name: Run tests
+        # Linux can't run freebsd executables, so we have to skip testing
+        if: ${{ matrix.target != 'x86_64-unknown-freebsd' }}
         run: cross test --release --all-features --target ${{matrix.target}}
       - name: Save files
         uses: actions/upload-artifact@v4
